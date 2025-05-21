@@ -3,14 +3,13 @@ import cv2
 def cropping_frame(frame, target_size=(256, 256)):
     # frame.shape = (480, 640, 3)
     # FOMM need RGB format
-    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
+    # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     frame = cv2.resize(frame, target_size)
     frame = cv2.flip(frame, 1)  # flip horizontally
 
-    return frame.copy()
+    return frame
 
-def combine_frames(camera_input, FOMM_output):
+def combine_frames(camera_input, FOMM_output, source_frame_name):
 
     # add border
     border_size = 6
@@ -28,7 +27,7 @@ def combine_frames(camera_input, FOMM_output):
     font_color = (0, 0, 0)
     thickness = 1
     text_left = "Camera Input"
-    text_right = "FOMM Output"
+    text_right = source_frame_name
 
     camera_labeled = cv2.copyMakeBorder(
         camera_input, 0, label_height, 0, 0,

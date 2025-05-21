@@ -11,18 +11,21 @@ from modules.keypoint_detector import KPDetector
 
 from utils import *
 
-def make_animation(frame):
-
-    animated_frame = cv2.flip(frame, 1)
-    return animated_frame
-
-def main_loop(kp_detector, generator):
+def main_loop(opt):
     # open camera
     cap = VideoCaptureAsync(0)
     cap.start()
     if not cap.isOpened():
         print("cannot open camera")
         return
+
+    # load FOMM model
+    generator, kp_detector = load_checkpoints(
+        config_path=opt.config, checkpoint_path=opt.checkpoint)
+    predictor = real_time_FOMM(generator, kp_detector)
+
+    source_imgs, source_imgs_names = load_img(opt.source_image)
+    predictor.set_source(source_imgs[0])
 
     # loop 
     while True:
@@ -32,9 +35,9 @@ def main_loop(kp_detector, generator):
             break
 
         camera_input = cropping_frame(frame)
-        FOMM_output = make_animation(camera_input)
+        FOMM_output = predictor.predict(camera_input)
 
-        combined = combine_frames(camera_input, FOMM_output)
+        combined = combine_frames(camera_input, FOMM_output, source_imgs_names[0])
         cv2.imshow('real-time FOMM (key \'q\' to exit)', combined)
 
         key = cv2.waitKey(1)
@@ -54,13 +57,8 @@ if __name__ == '__main__':
     parser.add_argument("--config", default='config\\vox-adv-256.yaml', help="path to config")
     parser.add_argument("--checkpoint", default='checkpoints\\vox-adv-cpk.pth.tar', help="path to checkpoint to restore")
     
-    parser.add_argument("--source_image", default='data\\potter.jpg', help="path to source image")
+    parser.add_argument("--source_image", default='data\\portraits\\*', help="path to source image")
 
     opt = parser.parse_args()
 
-    kp_detector, generator = load_checkpoints(
-        config_path=opt.config, checkpoint_path=opt.checkpoint)
-    
-    source_image = load_img(opt.source_image)
-
-    main_loop(kp_detector, generator)
+    main_loop(opt)
