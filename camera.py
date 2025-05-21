@@ -27,6 +27,10 @@ def main_loop(opt):
     source_imgs, source_imgs_names = load_img(opt.source_image)
     predictor.set_source(source_imgs[0])
 
+    frame_proportion = 0.9
+    frame_offset_x = 0
+    frame_offset_y = 0
+
     # loop 
     while True:
         ret, frame = cap.read()
@@ -34,10 +38,17 @@ def main_loop(opt):
             print("cannot receive frame (stream end?). Exiting ...")
             break
 
-        camera_input = cropping_frame(frame)
+        frame = frame[..., ::-1]
+        # camera_input = cropping_frame(frame)
+        frame, (frame_offset_x, frame_offset_y) = cropping_frame(frame, p=frame_proportion, offset_x=frame_offset_x, offset_y=frame_offset_y)
+        camera_input = cv2.resize(frame, (256, 256))
+
+        if find_best_frame(camera_input, predictor):
+            predictor.kp_driving_initial = None
+            
         FOMM_output = predictor.predict(camera_input)
 
-        combined = combine_frames(camera_input, FOMM_output, source_imgs_names[0])
+        combined = combine_frames(camera_input[..., ::-1], FOMM_output[..., ::-1], source_imgs_names[0])
         cv2.imshow('real-time FOMM (key \'q\' to exit)', combined)
 
         key = cv2.waitKey(1)
