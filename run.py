@@ -21,9 +21,6 @@ from reconstruction import reconstruction
 from animate import animate
 
 if __name__ == "__main__":
-    
-    if sys.version_info[0] < 3:
-        raise Exception("You must use Python 3 or higher. Recommended version is Python 3.7")
 
     parser = ArgumentParser()
     parser.add_argument("--config", required=True, help="path to config")
@@ -37,7 +34,7 @@ if __name__ == "__main__":
 
     opt = parser.parse_args()
     with open(opt.config) as f:
-        config = yaml.load(f)
+        config = yaml.load(f, Loader=yaml.FullLoader)
 
     if opt.checkpoint is not None:
         log_dir = os.path.join(*os.path.split(opt.checkpoint)[:-1])
