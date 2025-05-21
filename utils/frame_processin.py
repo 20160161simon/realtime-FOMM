@@ -2,9 +2,13 @@ import cv2
 
 def cropping_frame(frame, target_size=(256, 256)):
     # frame.shape = (480, 640, 3)
+    # FOMM need RGB format
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
     frame = cv2.resize(frame, target_size)
     frame = cv2.flip(frame, 1)  # flip horizontally
-    return frame
+
+    return frame.copy()
 
 def combine_frames(camera_input, FOMM_output):
 
