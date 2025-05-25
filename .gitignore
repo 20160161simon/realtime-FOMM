@@ -1,4 +1,4 @@
 /.vscode
 __pycache__
 /venv
-/checkpoints/*
+/checkpoints/vox-adv-cpk.pth.tar
