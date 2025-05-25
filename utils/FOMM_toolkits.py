@@ -49,14 +49,17 @@ def find_best_frame(driving_frame, predictor):
     with torch.no_grad():
         if predictor.start_frame is None:
             return False
-        
         driving = cv2.resize(driving_frame, (128, 128))[..., :3]
         kp_driving = predictor.get_fa_kp(driving)
         if kp_driving is not None:
             new_norm = (np.abs(predictor.fa_kp_source - kp_driving) ** 2).sum()
-            old_norm = (np.abs(predictor.fa_kp_source - predictor.get_fa_kp(predictor.start_frame)) ** 2).sum()
-            return new_norm < old_norm
+            old_norm = (np.abs(predictor.fa_kp_source - predictor.get_fa_kp(cv2.resize(predictor.start_frame, (128, 128))[..., :3])) ** 2).sum()
 
+            if old_norm < 3000:
+                return False
+
+            # print(new_norm, old_norm)
+            return new_norm < old_norm - 1000
         return False
 
 class real_time_FOMM:
@@ -80,7 +83,9 @@ class real_time_FOMM:
         with torch.no_grad():
             self.source_frame = convert_to_model_input(source_frame).cuda()
             self.kp_source = self.kp_detector(self.source_frame)
-            self.fa_kp_source = self.get_fa_kp(source_frame)
+            # self.fa_kp_source = self.get_fa_kp(source_frame)
+            self.fa_kp_source = self.get_fa_kp(cv2.resize(source_frame, (128, 128))[..., :3])
+
 
     def predict(self, driving_frame):
         with torch.no_grad():

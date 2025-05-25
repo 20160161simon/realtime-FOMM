@@ -3,11 +3,12 @@ os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 import cv2
 import torch
+import time
 from argparse import ArgumentParser
 
-from sync_batchnorm import DataParallelWithCallback
-from modules.generator import OcclusionAwareGenerator
-from modules.keypoint_detector import KPDetector
+# from sync_batchnorm import DataParallelWithCallback
+# from modules.generator import OcclusionAwareGenerator
+# from modules.keypoint_detector import KPDetector
 
 from utils import *
 
@@ -25,14 +26,26 @@ def main_loop(opt):
     predictor = real_time_FOMM(generator, kp_detector)
 
     source_imgs, source_imgs_names = load_img(opt.source_image)
-    predictor.set_source(source_imgs[0])
+    predictor.set_source(source_imgs[0]) # 本来想做切换头像，但没时间了 QQ
 
     frame_proportion = 0.9
     frame_offset_x = 0
     frame_offset_y = 0
 
+    # start timer
+    start_time = time.time()
+    re_init_cnt = 0
+    frame_cnt = 0
+    time_out = 60 # seconds
+
     # loop 
     while True:
+
+        # if time.time() - start_time > time_out:
+        #     print(f"re-init cnt: {re_init_cnt}, frame cnt: {frame_cnt}")
+        #     print("Timeout reached. Exiting...")
+        #     break
+
         ret, frame = cap.read()
         if not ret:
             print("cannot receive frame (stream end?). Exiting ...")
@@ -43,12 +56,16 @@ def main_loop(opt):
         frame, (frame_offset_x, frame_offset_y) = cropping_frame(frame, p=frame_proportion, offset_x=frame_offset_x, offset_y=frame_offset_y)
         camera_input = cv2.resize(frame, (256, 256))
 
-        if find_best_frame(camera_input, predictor):
-            predictor.kp_driving_initial = None
-            
+        if frame_cnt % 10 == 0:
+                # predictor.kp_driving_initial = None
+            if find_best_frame(camera_input, predictor):
+                re_init_cnt += 1
+                predictor.kp_driving_initial = None
+                
         FOMM_output = predictor.predict(camera_input)
 
         combined = combine_frames(camera_input[..., ::-1], FOMM_output[..., ::-1], source_imgs_names[0])
+        frame_cnt += 1
         cv2.imshow('real-time FOMM (key \'q\' to exit)', combined)
 
         key = cv2.waitKey(1)
